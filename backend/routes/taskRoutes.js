@@ -1,0 +1,14 @@
+import express from 'express';
+import { createTask, getMyTasks, updateTaskStatus, getTasksByGroup } from '../controllers/taskController.js';
+import { protect } from '../middleware/authMiddleware.js';
+
+const router = express.Router();
+
+router.route('/')
+  .post(protect, createTask)
+  .get(protect, getMyTasks);
+
+router.patch('/:id/status', protect, updateTaskStatus);
+router.get('/group/:groupId', protect, getTasksByGroup);
+
+export default router;
