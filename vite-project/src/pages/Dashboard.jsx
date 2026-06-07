@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -10,7 +10,7 @@ import {
   HiPlus, 
   HiArrowRight,
   HiOutlineCalendar,
-  HiOutlineSquares2X2
+  HiCamera
 } from 'react-icons/hi2';
 import { 
   BarChart, 
@@ -39,10 +39,12 @@ const StatCard = ({ title, value, icon: Icon, iconColor, bgColor, subValue }) =>
 );
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -67,16 +69,68 @@ const Dashboard = () => {
     count: item.count
   })) || [];
 
+  const handlePhotoUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    console.log('File selected:', file.name, file.size, file.type);
+
+    const formData = new FormData();
+    formData.append('image', file);
+
+    setUploading(true);
+    try {
+      console.log('Uploading to /auth/profile/photo...');
+      const { data } = await api.put('/auth/profile/photo', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      console.log('Upload success, new avatar:', data.avatar);
+      updateUser({ avatar: data.avatar });
+    } catch (err) {
+      console.error('Failed to upload photo:', err.response?.data || err.message);
+      alert('Failed to upload profile photo: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setUploading(false);
+      // Reset input so the same file can be selected again
+      e.target.value = '';
+    }
+  };
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12 rounded-2xl bg-primary-600 flex items-center justify-center shadow-lg shadow-primary-500/20">
-            <HiOutlineSquares2X2 size={24} className="text-white" />
+        <div className="flex items-center space-x-6">
+          <div className="relative group">
+            <div className={`w-20 h-20 rounded-2xl overflow-hidden border-4 border-white dark:border-slate-800 shadow-xl relative ${uploading ? 'opacity-50' : ''}`}>
+              <img 
+                src={user?.avatar || `https://ui-avatars.com/api/?name=${user?.name}&background=0284c7&color=fff`} 
+                alt={user?.name} 
+                className="w-full h-full object-cover"
+              />
+              {uploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                  <HiOutlineClock className="animate-spin text-white" size={24} />
+                </div>
+              )}
+            </div>
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="absolute -bottom-2 -right-2 p-2 bg-primary-600 text-white rounded-xl shadow-lg hover:bg-primary-700 transition-all group-hover:scale-110 active:scale-95"
+              title="Upload Profile Photo"
+            >
+              <HiCamera size={16} />
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handlePhotoUpload} 
+              className="hidden" 
+              accept="image/*"
+            />
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              Hello, {user?.name.split(' ')[0]}! 👋
+              Hello, {user?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
             <p className="text-slate-500 dark:text-slate-400">Welcome back to <span className="font-serif text-primary-600">Ratha</span>.</p>
           </div>

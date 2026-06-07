@@ -60,8 +60,16 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   };
 
+  const updateUser = (data) => {
+    const userInfo = JSON.parse(localStorage.getItem('userInfo') || sessionStorage.getItem('userInfo'));
+    const newUserInfo = { ...userInfo, ...data };
+    const storage = localStorage.getItem('userInfo') ? localStorage : sessionStorage;
+    storage.setItem('userInfo', JSON.stringify(newUserInfo));
+    setUser(newUserInfo);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

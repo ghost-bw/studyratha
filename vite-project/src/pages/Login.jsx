@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
 import { Mail, Lock, Loader2 } from 'lucide-react';
 import { HiOutlineSquares2X2 } from 'react-icons/hi2';
@@ -25,27 +26,17 @@ const Login = () => {
     }
   }, []);
 
-  useEffect(() => {
-    /* global google */
-    if (window.google) {
-      google.accounts.id.initialize({
-        client_id: import.meta.env.VITE_GOOGLE_CLIENT_ID,
-        callback: handleGoogleResponse
-      });
-      google.accounts.id.renderButton(
-        document.getElementById("googleSignIn"),
-        { theme: "outline", size: "large", width: "100%" }
-      );
-    }
-  }, []);
-
-  const handleGoogleResponse = async (response) => {
+  const handleGoogleSuccess = async (credentialResponse) => {
     try {
-      await googleLogin(response.credential, rememberMe);
+      await googleLogin(credentialResponse.credential, rememberMe);
       navigate('/dashboard');
     } catch (err) {
       setError('Google Login failed');
     }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google Login failed');
   };
 
   const handleSubmit = async (e) => {
@@ -162,7 +153,16 @@ const Login = () => {
           </div>
         </div>
 
-        <div id="googleSignIn"></div>
+        <div id="googleSignIn" className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+            width="100%"
+            theme="outline"
+            size="large"
+          />
+        </div>
 
         <p className="mt-8 text-center text-sm text-slate-600 dark:text-slate-400">
           Don't have an account? <Link to="/signup" className="text-primary-600 hover:underline font-medium">Sign up</Link>

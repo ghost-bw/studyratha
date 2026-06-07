@@ -1,8 +1,9 @@
+
 # Ratha - Study Group Task Tracker
 
 Ratha (meaning "Chariot") is a production-ready MERN Stack web application designed to help study groups track daily tasks, progress, and accountability.
 
-## Tech Stack
+## Tech Stacky
 - **Frontend:** React.js (Vite), Tailwind CSS 4, Axios, React Router 7, Recharts, Lucide React, Context API.
 - **Backend:** Node.js, Express.js, MongoDB (Mongoose), JWT, Google Auth Library, Cloudinary, Multer.
 

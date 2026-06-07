@@ -284,15 +284,25 @@ const Tasks = () => {
                       <span>View Evidence</span>
                     </button>
                   )}
+                  {task.status === 'In Progress' && task.assignedTo?._id === user?._id && (
+                    <button 
+                      onClick={() => { setSelectedTask(task); setStatusToUpdate('In Progress'); setShowEvidenceModal(true); }}
+                      className="flex items-center space-x-2 text-xs font-bold text-amber-600 hover:text-amber-700 transition-colors bg-amber-50 dark:bg-amber-900/20 px-3 py-1 rounded-full border border-amber-100 dark:border-amber-900/30"
+                    >
+                      <HiOutlineArrowPath size={14} />
+                      <span>Log Progress</span>
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="flex items-center space-x-3 mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-t-0 border-slate-50 dark:border-slate-800">
                 {task.assignedTo?._id === user?._id ? (
                   <select 
                     value={task.status}
+                    disabled={task.status === 'Completed'}
                     onChange={(e) => handleStatusChange(task, e.target.value)}
                     className={`rounded-xl px-4 py-2 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all cursor-pointer ${
-                      task.status === 'Completed' ? 'bg-green-100 text-green-700' :
+                      task.status === 'Completed' ? 'bg-green-100 text-green-700 opacity-75 cursor-not-allowed' :
                       task.status === 'In Progress' ? 'bg-amber-100 text-amber-700' :
                       'bg-slate-100 text-slate-600'
                     }`}
