@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { GoogleLogin } from '@react-oauth/google';
 import { useAuth } from '../context/AuthContext';
@@ -29,13 +30,16 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     try {
       await googleLogin(credentialResponse.credential, rememberMe);
+      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
+      toast.error('Google Login failed');
       setError('Google Login failed');
     }
   };
 
   const handleGoogleError = () => {
+    toast.error('Google Login failed');
     setError('Google Login failed');
   };
 
@@ -54,12 +58,16 @@ const Login = () => {
         localStorage.removeItem('rememberedPassword');
       }
       
+      toast.success('Login successful!');
       navigate('/dashboard');
     } catch (err) {
       if (err.needsVerification) {
+        toast.error('Please verify your email first');
         navigate('/signup', { state: { email: err.email } });
       } else {
-        setError(err.response?.data?.message || 'Invalid email or password');
+        const errorMsg = err.response?.data?.message || 'Invalid email or password';
+        toast.error(errorMsg);
+        setError(errorMsg);
       }
     } finally {
       setIsSubmitting(false);

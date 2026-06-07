@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { User, Mail, Lock, Loader2, ShieldCheck } from 'lucide-react';
@@ -26,7 +27,9 @@ const Signup = () => {
       await register(name, email, password);
       setShowOtpStep(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
+      const errorMsg = err.response?.data?.message || 'Something went wrong';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -39,9 +42,12 @@ const Signup = () => {
     try {
       const { data } = await api.post('/auth/verify-otp', { email, otp });
       localStorage.setItem('userInfo', JSON.stringify(data));
+      toast.success('Email verified successfully!');
       window.location.href = '/dashboard'; // Force reload to update context
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP');
+      const errorMsg = err.response?.data?.message || 'Invalid OTP';
+      toast.error(errorMsg);
+      setError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

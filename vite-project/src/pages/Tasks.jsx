@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { Loader2 } from 'lucide-react';
@@ -27,6 +28,7 @@ const Tasks = () => {
   const [selectedTask, setSelectedTask] = useState(null);
   const [taskLogs, setTaskLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
+  const [filterDate, setFilterDate] = useState('');
   
   // Form states
   const [title, setTitle] = useState('');
@@ -44,12 +46,14 @@ const Tasks = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [filterDate]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
+      const tasksUrl = filterDate ? `/tasks?date=${filterDate}` : '/tasks';
       const [tasksRes, groupsRes] = await Promise.all([
-        api.get('/tasks'),
+        api.get(tasksUrl),
         api.get('/groups')
       ]);
       setTasks(tasksRes.data);
@@ -81,7 +85,7 @@ const Tasks = () => {
       resetForm();
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create task');
+      toast.error(err.response?.data?.message || 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }
@@ -105,7 +109,7 @@ const Tasks = () => {
   const handleFileChange = (e) => {
     const selectedFiles = Array.from(e.target.files);
     if (files.length + selectedFiles.length > 5) {
-      alert('You can only upload up to 5 images per log.');
+      toast.error('You can only upload up to 5 images per log.');
       return;
     }
     
@@ -124,7 +128,7 @@ const Tasks = () => {
   const handleSubmitEvidence = async (e) => {
     e.preventDefault();
     if (files.length === 0) {
-      alert('Please upload at least one screenshot/picture as evidence.');
+      toast.error('Please upload at least one screenshot/picture as evidence.');
       return;
     }
 
@@ -145,7 +149,7 @@ const Tasks = () => {
       resetEvidenceForm();
       fetchData();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to upload evidence');
+      toast.error(err.response?.data?.message || 'Failed to submit evidence');
     } finally {
       setIsSubmitting(false);
     }
@@ -223,7 +227,28 @@ const Tasks = () => {
           />
         </div>
         <div className="flex items-center space-x-3 w-full md:w-auto">
-          <button className="flex-1 md:flex-none flex items-center justify-center space-x-2 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all">
+          <div className="flex-1 md:flex-none flex items-center space-x-2 px-4 py-2 border border-slate-200 dark:border-slate-800 rounded-xl bg-slate-50 dark:bg-slate-950">
+            <HiOutlineCalendar size={18} className="text-slate-400" />
+            <input 
+              type="date" 
+              value={filterDate}
+              onChange={(e) => setFilterDate(e.target.value)}
+              className="bg-transparent outline-none text-sm font-bold text-slate-600 dark:text-slate-400 cursor-pointer"
+            />
+            {filterDate && (
+              <button 
+                onClick={() => setFilterDate('')}
+                className="text-slate-400 hover:text-red-500 transition-colors"
+                title="Clear Filter"
+              >
+                <HiXMark size={16} />
+              </button>
+            )}
+          </div>
+          <button 
+            disabled
+            className="hidden md:flex items-center justify-center space-x-2 px-4 py-2.5 border border-slate-200 dark:border-slate-800 rounded-xl text-slate-600 dark:text-slate-400 font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-all opacity-50 cursor-not-allowed"
+          >
             <HiFunnel size={18} />
             <span>Filter</span>
           </button>

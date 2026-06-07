@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -88,7 +89,7 @@ const Dashboard = () => {
       updateUser({ avatar: data.avatar });
     } catch (err) {
       console.error('Failed to upload photo:', err.response?.data || err.message);
-      alert('Failed to upload profile photo: ' + (err.response?.data?.message || err.message));
+      toast.error('Failed to upload profile photo: ' + (err.response?.data?.message || err.message));
     } finally {
       setUploading(false);
       // Reset input so the same file can be selected again

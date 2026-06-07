@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
 
 // Routes imports
 import authRoutes from './routes/authRoutes.js';
@@ -12,24 +15,51 @@ import taskRoutes from './routes/taskRoutes.js';
 import taskLogRoutes from './routes/taskLogRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 
+// Middleware imports
+import { notFound, errorHandler } from './middleware/errorMiddleware.js';
+
 dotenv.config();
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Middleware
+// Standard Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Security Middleware
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+app.use(mongoSanitize());
+
+// Rate Limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  message: 'Too many requests from this IP, please try again after 15 minutes',
+});
+app.use('/api', limiter);
 
 // DB Connection
 const PORT = process.env.PORT || 5000;
 const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/ratha';
 
-mongoose.connect(MONGO_URI)
-  .then(() => console.log('MongoDB Connected'))
-  .catch(err => console.error('MongoDB Connection Error:', err));
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000,
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (err) {
+    console.error(`MongoDB Connection Error: ${err.message}`);
+    process.exit(1);
+  }
+};
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -38,20 +68,18 @@ app.use('/api/tasks', taskRoutes);
 app.use('/api/tasklogs', taskLogRoutes);
 app.use('/api/analytics', analyticsRoutes);
 
-// Error Handling Middleware
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    message: err.message,
-    stack: process.env.NODE_ENV === 'production' ? null : err.stack,
-  });
-});
-
 // Basic Route
 app.get('/', (req, res) => {
   res.send('Ratha API is running...');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+// Error Handling Middleware
+app.use(notFound);
+app.use(errorHandler);
+
+// Connect to DB then start server
+connectDB().then(() => {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
 });

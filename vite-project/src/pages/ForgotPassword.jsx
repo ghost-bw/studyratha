@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, Loader2, ShieldCheck, Lock } from 'lucide-react';
 import { HiOutlineSquares2X2 } from 'react-icons/hi2';
@@ -23,9 +24,12 @@ const ForgotPassword = () => {
     try {
       const { data } = await api.post('/auth/forgot-password', { email });
       setMessage(data.message);
+      toast.success('Reset OTP sent to your email!');
       setShowResetStep(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to send reset link');
+      const errorMsg = err.response?.data?.message || 'Failed to send reset link';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
@@ -40,11 +44,14 @@ const ForgotPassword = () => {
     try {
       const { data } = await api.post('/auth/reset-password', { email, otp, password });
       setMessage(data.message);
+      toast.success('Password reset successful! Redirecting...');
       setTimeout(() => {
         window.location.href = '/login';
       }, 2000);
     } catch (err) {
-      setError(err.response?.data?.message || 'Invalid OTP or failed to reset');
+      const errorMsg = err.response?.data?.message || 'Invalid OTP or failed to reset';
+      setError(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -94,7 +95,7 @@ const Groups = () => {
       setGroupDesc('');
       fetchGroups();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to create group');
+      toast.error(err.response?.data?.message || 'Failed to create group');
     } finally {
       setIsSubmitting(false);
     }
@@ -109,7 +110,7 @@ const Groups = () => {
       setInviteCode('');
       fetchGroups();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to join group');
+      toast.error(err.response?.data?.message || 'Failed to join group');
     } finally {
       setIsSubmitting(false);
     }
