@@ -25,8 +25,13 @@ export const registerUser = asyncHandler(async (req, res) => {
       userExists.otp = otp;
       userExists.otpExpires = Date.now() + 10 * 60 * 1000; // 10 mins
       await userExists.save();
-      await sendOTP(email, otp);
-      return res.status(201).json({ message: 'Verification OTP sent to your email.' });
+      const emailSent = await sendOTP(email, otp);
+      if (emailSent) {
+        return res.status(201).json({ message: 'Verification OTP sent to your email.' });
+      } else {
+        res.status(500);
+        throw new Error('Failed to send verification email. Please try again later.');
+      }
     }
   }
 
@@ -43,8 +48,13 @@ export const registerUser = asyncHandler(async (req, res) => {
   });
 
   if (user) {
-    await sendOTP(email, otp);
-    res.status(201).json({ message: 'Verification OTP sent to your email.' });
+    const emailSent = await sendOTP(email, otp);
+    if (emailSent) {
+      res.status(201).json({ message: 'Verification OTP sent to your email.' });
+    } else {
+      res.status(500);
+      throw new Error('Failed to send verification email. Please try again later.');
+    }
   } else {
     res.status(400);
     throw new Error('Invalid user data');
