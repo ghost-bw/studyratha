@@ -1,5 +1,5 @@
 import { createContext, useState, useEffect, useContext } from 'react';
-import axios from 'axios';
+import api from '../services/api';
 
 const AuthContext = createContext();
 
@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password, remember = false) => {
     try {
-      const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/login`, { email, password });
+      const { data } = await api.post('/auth/login', { email, password });
       localStorage.removeItem('userInfo');
       sessionStorage.removeItem('userInfo');
       const storage = remember ? localStorage : sessionStorage;
@@ -34,8 +34,13 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, remember = true) => {
-    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/register`, { name, email, password });
+  const register = async (name, email, password) => {
+    const { data } = await api.post('/auth/register', { name, email, password });
+    return data;
+  };
+
+  const verifyOTP = async (email, otp, remember = true) => {
+    const { data } = await api.post('/auth/verify-otp', { email, otp });
     localStorage.removeItem('userInfo');
     sessionStorage.removeItem('userInfo');
     const storage = remember ? localStorage : sessionStorage;
@@ -45,7 +50,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   const googleLogin = async (credential, remember = true) => {
-    const { data } = await axios.post(`${import.meta.env.VITE_API_URL}/auth/google`, { credential });
+    const { data } = await api.post('/auth/google', { credential });
     localStorage.removeItem('userInfo');
     sessionStorage.removeItem('userInfo');
     const storage = remember ? localStorage : sessionStorage;
@@ -69,7 +74,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, googleLogin, logout, updateUser }}>
+    <AuthContext.Provider value={{ user, loading, login, register, verifyOTP, googleLogin, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

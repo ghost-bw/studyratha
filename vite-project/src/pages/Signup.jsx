@@ -16,7 +16,7 @@ const Signup = () => {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const { register } = useAuth();
+  const { register, verifyOTP } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -26,6 +26,7 @@ const Signup = () => {
     try {
       await register(name, email, password);
       setShowOtpStep(true);
+      toast.success('Verification code sent to your email!');
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Something went wrong';
       toast.error(errorMsg);
@@ -40,10 +41,9 @@ const Signup = () => {
     setError('');
     setIsSubmitting(true);
     try {
-      const { data } = await api.post('/auth/verify-otp', { email, otp });
-      localStorage.setItem('userInfo', JSON.stringify(data));
+      await verifyOTP(email, otp);
       toast.success('Email verified successfully!');
-      window.location.href = '/dashboard'; // Force reload to update context
+      navigate('/dashboard');
     } catch (err) {
       const errorMsg = err.response?.data?.message || 'Invalid OTP';
       toast.error(errorMsg);
