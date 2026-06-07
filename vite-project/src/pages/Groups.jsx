@@ -123,7 +123,7 @@ const Groups = () => {
         setSelectedGroup(null);
         fetchGroups();
       } catch (err) {
-        alert(err.response?.data?.message || 'Failed to leave group');
+        toast.error(err.response?.data?.message || 'Failed to leave group');
       }
     }
   };
@@ -135,7 +135,7 @@ const Groups = () => {
         setSelectedGroup(null);
         fetchGroups();
       } catch (err) {
-        alert(err.response?.data?.message || 'Failed to delete group');
+        toast.error(err.response?.data?.message || 'Failed to delete group');
       }
     }
   };

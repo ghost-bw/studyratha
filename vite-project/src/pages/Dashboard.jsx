@@ -74,21 +74,18 @@ const Dashboard = () => {
     const file = e.target.files[0];
     if (!file) return;
 
-    console.log('File selected:', file.name, file.size, file.type);
-
     const formData = new FormData();
     formData.append('image', file);
 
     setUploading(true);
     try {
-      console.log('Uploading to /auth/profile/photo...');
       const { data } = await api.put('/auth/profile/photo', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
-      console.log('Upload success, new avatar:', data.avatar);
       updateUser({ avatar: data.avatar });
+      toast.success('Profile photo updated!');
     } catch (err) {
-      console.error('Failed to upload photo:', err.response?.data || err.message);
+      // API service already logs this, but we can add context if needed
       toast.error('Failed to upload profile photo: ' + (err.response?.data?.message || err.message));
     } finally {
       setUploading(false);
