@@ -28,7 +28,8 @@ const __dirname = path.dirname(__filename);
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  
 ].filter(Boolean);
 
 app.use(cors({
