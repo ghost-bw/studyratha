@@ -7,6 +7,9 @@ import { fileURLToPath } from 'url';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
+import { Server } from 'socket.io';
+import webpush from 'web-push';
+import { initSocket } from './utils/notificationUtils.js';
 
 // Routes imports
 import authRoutes from './routes/authRoutes.js';
@@ -14,11 +17,20 @@ import groupRoutes from './routes/groupRoutes.js';
 import taskRoutes from './routes/taskRoutes.js';
 import taskLogRoutes from './routes/taskLogRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
+import notificationRoutes from './routes/notificationRoutes.js';
+import initCronJobs from './utils/cronJobs.js';
 
 // Middleware imports
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 dotenv.config();
+
+// Web Push Configuration
+webpush.setVapidDetails(
+  'mailto:support@studyratha.com',
+  process.env.VAPID_PUBLIC_KEY,
+  process.env.VAPID_PRIVATE_KEY
+);
 
 const app = express();
 const __filename = fileURLToPath(import.meta.url);
@@ -85,6 +97,7 @@ app.use('/api/groups', groupRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/tasklogs', taskLogRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Basic Route
 app.get('/', (req, res) => {
@@ -97,7 +110,16 @@ app.use(errorHandler);
 
 // Connect to DB then start server
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  const server = app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
+    initCronJobs();
   });
+
+  const io = new Server(server, {
+    cors: {
+      origin: allowedOrigins,
+      credentials: true,
+    },
+  });
+  initSocket(io);
 });

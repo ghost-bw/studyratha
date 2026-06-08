@@ -12,6 +12,12 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
   const completedTasks = await Task.countDocuments({ assignedTo: userId, status: 'Completed' });
   const pendingTasks = await Task.countDocuments({ assignedTo: userId, status: 'Pending' });
   const inProgressTasks = await Task.countDocuments({ assignedTo: userId, status: 'In Progress' });
+  
+  const overdueTasks = await Task.countDocuments({ 
+    assignedTo: userId, 
+    status: { $ne: 'Completed' },
+    deadline: { $lt: new Date() }
+  });
 
   const completionPercentage = totalTasks > 0 ? (completedTasks / totalTasks) * 100 : 0;
 
@@ -40,6 +46,7 @@ export const getDashboardStats = asyncHandler(async (req, res) => {
     completedTasks,
     pendingTasks,
     inProgressTasks,
+    overdueTasks,
     completionPercentage,
     completionTrend
   });

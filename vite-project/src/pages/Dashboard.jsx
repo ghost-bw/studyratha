@@ -144,7 +144,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         <StatCard 
           title="Total Tasks" 
           value={stats?.totalTasks || 0} 
@@ -173,9 +173,17 @@ const Dashboard = () => {
           title="Pending" 
           value={stats?.pendingTasks || 0} 
           icon={HiOutlineExclamationCircle} 
+          iconColor="text-slate-500"
+          bgColor="bg-slate-500/10"
+          subValue="Yet to start"
+        />
+        <StatCard 
+          title="Overdue" 
+          value={stats?.overdueTasks || 0} 
+          icon={HiOutlineExclamationCircle} 
           iconColor="text-red-500"
           bgColor="bg-red-500/10"
-          subValue="Yet to start"
+          subValue="Past deadline"
         />
       </div>
 

@@ -29,6 +29,7 @@ const Tasks = () => {
   const [taskLogs, setTaskLogs] = useState([]);
   const [logsLoading, setLogsLoading] = useState(false);
   const [filterDate, setFilterDate] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
   
   // Form states
   const [title, setTitle] = useState('');
@@ -37,6 +38,7 @@ const Tasks = () => {
   const [priority, setPriority] = useState('Medium');
   const [groupId, setGroupId] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Evidence states
   const [statusToUpdate, setStatusToUpdate] = useState('');
@@ -80,15 +82,33 @@ const Tasks = () => {
         assignedTo: user._id
       };
 
-      await api.post('/tasks', payload);
+      if (isEditing && selectedTask) {
+        await api.put(`/tasks/${selectedTask._id}`, payload);
+        toast.success('Task updated successfully');
+      } else {
+        await api.post('/tasks', payload);
+        toast.success('Task created successfully');
+      }
+      
       setShowCreateModal(false);
       resetForm();
       fetchData();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to create task');
+      toast.error(err.response?.data?.message || `Failed to ${isEditing ? 'update' : 'create'} task`);
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleEditTask = (task) => {
+    setSelectedTask(task);
+    setTitle(task.title);
+    setDescription(task.description || '');
+    setDeadline(new Date(task.deadline).toISOString().split('T')[0]);
+    setPriority(task.priority);
+    setGroupId(task.groupId?._id || '');
+    setIsEditing(true);
+    setShowCreateModal(true);
   };
 
   const handleStatusChange = async (task, newStatus) => {
@@ -201,6 +221,11 @@ const Tasks = () => {
     }
   };
 
+  const filteredTasks = tasks.filter(task => 
+    task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    task.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -209,7 +234,7 @@ const Tasks = () => {
           <p className="text-slate-500 dark:text-slate-400 mt-1">Manage your study schedule and track progress.</p>
         </div>
         <button 
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => { resetForm(); setIsEditing(false); setShowCreateModal(true); }}
           className="flex items-center space-x-2 bg-primary-600 hover:bg-primary-700 text-white px-5 py-2.5 rounded-xl font-bold transition-all shadow-lg shadow-primary-500/20 active:scale-95"
         >
           <HiPlus size={20} />
@@ -223,6 +248,8 @@ const Tasks = () => {
           <input 
             type="text" 
             placeholder="Search tasks..." 
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
             className="w-full pl-12 pr-4 py-2.5 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl outline-none focus:ring-2 focus:ring-primary-500 dark:text-white transition-all"
           />
         </div>
@@ -270,7 +297,7 @@ const Tasks = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-6">
-          {tasks.map((task) => (
+          {filteredTasks.map((task) => (
             <div key={task._id} className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center gap-6 group">
               <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-slate-50 dark:bg-slate-950 flex items-center justify-center group-hover:scale-110 transition-transform">
                 {getStatusIcon(task.status)}
@@ -345,6 +372,16 @@ const Tasks = () => {
                     {task.status}
                   </div>
                 )}
+                {task.createdBy?._id === user?._id && (
+                  <button 
+                    onClick={() => handleEditTask(task)}
+                    disabled={Date.now() - new Date(task.createdAt).getTime() > 5 * 60 * 1000}
+                    className="p-2 text-slate-400 hover:text-primary-600 dark:hover:text-primary-400 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                    title={Date.now() - new Date(task.createdAt).getTime() > 5 * 60 * 1000 ? "Editing expired (5 mins passed)" : "Edit Task"}
+                  >
+                    <HiOutlineArrowPath size={20} className="rotate-180" />
+                  </button>
+                )}
                 <button className="p-3 text-slate-300 hover:text-slate-600 dark:hover:text-slate-100 transition-colors">
                   <HiEllipsisVertical size={20} />
                 </button>
@@ -358,7 +395,7 @@ const Tasks = () => {
       {showCreateModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
           <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg p-8 animate-in zoom-in-95 duration-200">
-            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">Create New Task</h2>
+            <h2 className="text-3xl font-black text-slate-900 dark:text-white mb-6 tracking-tight">{isEditing ? 'Edit Task' : 'Create New Task'}</h2>
             <form onSubmit={handleCreateTask} className="space-y-5">
               <div>
                 <label className="block text-xs font-black text-slate-400 uppercase tracking-widest mb-2">Title</label>

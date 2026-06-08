@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { NotificationProvider } from './context/NotificationContext';
 import Dashboard from './pages/Dashboard';
 import Groups from './pages/Groups';
 import Tasks from './pages/Tasks';
@@ -67,9 +68,11 @@ function App() {
   return (
     <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
       <AuthProvider>
-        <Router>
-          <AppRoutes />
-        </Router>
+        <NotificationProvider>
+          <Router>
+            <AppRoutes />
+          </Router>
+        </NotificationProvider>
       </AuthProvider>
     </GoogleOAuthProvider>
   );

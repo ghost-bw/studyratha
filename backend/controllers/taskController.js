@@ -45,9 +45,48 @@ export const getMyTasks = asyncHandler(async (req, res) => {
   const tasks = await Task.find(query)
     .populate('assignedTo', 'name email avatar')
     .populate('createdBy', 'name email avatar')
-    .populate('groupId', 'name');
+    .populate('groupId', 'name')
+    .sort('-createdAt');
     
   res.json(tasks);
+});
+
+// @desc    Update a task
+// @route   PUT /api/tasks/:id
+export const updateTask = asyncHandler(async (req, res) => {
+  const { title, description, deadline, priority, assignedTo } = req.body;
+
+  const task = await Task.findById(req.params.id);
+
+  if (!task) {
+    res.status(404);
+    throw new Error('Task not found');
+  }
+
+  // Only creator can edit the task
+  if (!task.createdBy.equals(req.user._id)) {
+    res.status(401);
+    throw new Error('Not authorized to edit this task');
+  }
+
+  // Check if 5 minutes have passed since creation
+  const fiveMinutes = 5 * 60 * 1000;
+  const timeDifference = Date.now() - new Date(task.createdAt).getTime();
+
+  if (timeDifference > fiveMinutes) {
+    res.status(400);
+    throw new Error('Task can only be edited within 5 minutes of creation');
+  }
+
+  task.title = title || task.title;
+  task.description = description || task.description;
+  task.deadline = deadline || task.deadline;
+  task.priority = priority || task.priority;
+  task.assignedTo = assignedTo || task.assignedTo;
+
+  const updatedTask = await task.save();
+
+  res.json(updatedTask);
 });
 
 // @desc    Update task status
@@ -79,6 +118,7 @@ export const updateTaskStatus = asyncHandler(async (req, res) => {
 export const getTasksByGroup = asyncHandler(async (req, res) => {
   const tasks = await Task.find({ groupId: req.params.groupId })
     .populate('assignedTo', 'name email avatar')
-    .populate('createdBy', 'name email avatar');
+    .populate('createdBy', 'name email avatar')
+    .sort('-createdAt');
   res.json(tasks);
 });

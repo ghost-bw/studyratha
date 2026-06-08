@@ -41,6 +41,10 @@ const Groups = () => {
   const [groupDesc, setGroupDesc] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [announcements, setAnnouncements] = useState([]);
+  const [announcementText, setAnnouncementText] = useState('');
+  const [announcementsLoading, setAnnouncementsLoading] = useState(false);
+  const [taskSearchTerm, setTaskSearchTerm] = useState('');
 
   useEffect(() => {
     fetchGroups();
@@ -60,14 +64,46 @@ const Groups = () => {
   const fetchGroupDetails = async (group) => {
     setSelectedGroup(group);
     setTasksLoading(true);
+    setAnnouncementsLoading(true);
     setMemberFilter(null);
+    setTaskSearchTerm('');
+    
     try {
-      const { data } = await api.get(`/tasks/group/${group._id}`);
-      setGroupTasks(data);
+      // Fetch tasks first
+      const tasksRes = await api.get(`/tasks/group/${group._id}`);
+      setGroupTasks(tasksRes.data);
+      
+      // Then try fetching announcements separately to avoid blocking tasks if it fails
+      try {
+        const announcementsRes = await api.get(`/groups/${group._id}/announcements`);
+        setAnnouncements(announcementsRes.data);
+      } catch (annErr) {
+        console.error("Announcements failed:", annErr);
+        setAnnouncements([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error("Tasks failed:", err);
+      toast.error('Failed to load group tasks');
     } finally {
       setTasksLoading(false);
+      setAnnouncementsLoading(false);
+    }
+  };
+
+  const handlePostAnnouncement = async (e) => {
+    e.preventDefault();
+    if (!announcementText.trim()) return;
+
+    setIsSubmitting(true);
+    try {
+      const { data } = await api.post(`/groups/${selectedGroup._id}/announcements`, { text: announcementText });
+      setAnnouncements(prev => [data, ...prev]);
+      setAnnouncementText('');
+      toast.success('Announcement posted!');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to post announcement');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -146,9 +182,12 @@ const Groups = () => {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
-  const filteredTasks = memberFilter 
+  const filteredAndSearchedTasks = (memberFilter 
     ? groupTasks.filter(t => t.assignedTo?._id === memberFilter)
-    : groupTasks;
+    : groupTasks).filter(task => 
+      task.title.toLowerCase().includes(taskSearchTerm.toLowerCase()) ||
+      task.description?.toLowerCase().includes(taskSearchTerm.toLowerCase())
+    );
 
   if (selectedGroup) {
     return (
@@ -243,16 +282,73 @@ const Groups = () => {
                   ))}
                 </div>
               </div>
+
+              <div className="pt-6 border-t border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4 flex items-center space-x-2">
+                  <HiOutlineClipboardDocument size={16} />
+                  <span>Announcements</span>
+                </h3>
+                
+                <form onSubmit={handlePostAnnouncement} className="mb-4">
+                  <div className="relative">
+                    <textarea 
+                      value={announcementText}
+                      onChange={(e) => setAnnouncementText(e.target.value)}
+                      placeholder="Make an announcement..."
+                      className="w-full p-3 pr-10 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-sm focus:ring-2 focus:ring-primary-500 outline-none resize-none"
+                      rows="2"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={isSubmitting || !announcementText.trim()}
+                      className="absolute bottom-3 right-3 text-primary-600 hover:text-primary-700 disabled:opacity-30 transition-colors"
+                    >
+                      <HiOutlineCheckBadge size={20} />
+                    </button>
+                  </div>
+                </form>
+
+                <div className="space-y-4 max-h-[300px] overflow-y-auto pr-2">
+                  {announcementsLoading ? (
+                    <div className="flex justify-center py-4">
+                      <HiOutlineArrowPath className="animate-spin text-primary-400" size={24} />
+                    </div>
+                  ) : announcements.length === 0 ? (
+                    <p className="text-xs text-slate-400 text-center py-4 font-medium italic">No announcements yet.</p>
+                  ) : (
+                    announcements.map((a, i) => (
+                      <div key={i} className="bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center space-x-2 mb-2">
+                          <img src={a.user?.avatar || `https://ui-avatars.com/api/?name=${a.user?.name}`} alt="" className="w-5 h-5 rounded-full" />
+                          <span className="text-[10px] font-bold text-slate-600 dark:text-slate-400">{a.user?.name}</span>
+                          <span className="text-[10px] text-slate-400">• {new Date(a.createdAt).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-xs text-slate-700 dark:text-slate-300 font-medium">{a.text}</p>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
             </div>
 
             <div className="lg:col-span-3 space-y-6">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest flex items-center space-x-2">
                   <HiOutlineCheckBadge size={16} />
                   <span>{memberFilter ? "Member Tasks" : "Group Tasks"}</span>
                 </h3>
-                <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold px-3 py-1 rounded-full">
-                  {filteredTasks.length} {filteredTasks.length === 1 ? 'task' : 'tasks'}
+                <div className="relative flex-grow max-w-xs">
+                  <HiOutlineArrowPath className={`absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 ${tasksLoading ? 'animate-spin' : 'hidden'}`} size={16} />
+                  <input 
+                    type="text"
+                    placeholder="Search group tasks..."
+                    value={taskSearchTerm}
+                    onChange={(e) => setTaskSearchTerm(e.target.value)}
+                    className="w-full pl-4 pr-10 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs focus:ring-2 focus:ring-primary-500 outline-none transition-all"
+                  />
+                </div>
+                <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-bold px-3 py-1 rounded-full whitespace-nowrap">
+                  {filteredAndSearchedTasks.length} {filteredAndSearchedTasks.length === 1 ? 'task' : 'tasks'}
                 </span>
               </div>
 
@@ -261,7 +357,7 @@ const Groups = () => {
                   <HiOutlineArrowPath className="animate-spin text-primary-600" size={40} />
                   <p className="text-slate-500 animate-pulse font-medium">Loading group tasks...</p>
                 </div>
-              ) : filteredTasks.length === 0 ? (
+              ) : filteredAndSearchedTasks.length === 0 ? (
                 <div className="bg-slate-50 dark:bg-slate-950 rounded-3xl p-12 text-center border-2 border-dashed border-slate-200 dark:border-slate-800">
                   <HiOutlineCalendar size={48} className="mx-auto text-slate-300 mb-4" />
                   <h3 className="text-xl font-bold text-slate-900 dark:text-white">No tasks found</h3>
@@ -271,8 +367,9 @@ const Groups = () => {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 gap-4">
-                  {filteredTasks.map((task) => (
+                  {filteredAndSearchedTasks.map((task) => (
                     <div key={task._id} className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center gap-4">
+
                       <div className="flex-grow">
                         <div className="flex items-start justify-between">
                           <h4 className="font-bold text-slate-900 dark:text-white text-lg">{task.title}</h4>

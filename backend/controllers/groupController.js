@@ -1,6 +1,7 @@
 import GroupModel from '../models/Group.js'; 
 import crypto from 'crypto';
 import asyncHandler from 'express-async-handler';
+import { sendNotification } from '../utils/notificationUtils.js';
 
 // @desc    Create a new group
 // @route   POST /api/groups
@@ -32,7 +33,7 @@ export const joinGroup = asyncHandler(async (req, res) => {
     throw new Error('Group not found');
   }
 
-  if (group.members.includes(req.user._id)) {
+  if (group.members.some(memberId => memberId.equals(req.user._id))) {
     res.status(400);
     throw new Error('Already a member');
   }
@@ -110,4 +111,69 @@ export const deleteGroup = asyncHandler(async (req, res) => {
 
   await GroupModel.findByIdAndDelete(req.params.id);
   res.json({ message: 'Group deleted successfully' });
+});
+
+// @desc    Add announcement to group
+// @route   POST /api/groups/:id/announcements
+export const addAnnouncement = asyncHandler(async (req, res) => {
+  const { text } = req.body;
+  const group = await GroupModel.findById(req.params.id);
+
+  if (!group) {
+    res.status(404);
+    throw new Error('Group not found');
+  }
+
+  if (!group.members.some(memberId => memberId.equals(req.user._id))) {
+    res.status(401);
+    throw new Error('Not a member of this group');
+  }
+
+  const announcement = {
+    user: req.user._id,
+    text,
+  };
+
+  group.announcements.unshift(announcement);
+  await group.save();
+
+  const updatedGroup = await GroupModel.findById(req.params.id)
+    .populate('announcements.user', 'name avatar');
+  
+  const savedAnnouncement = updatedGroup.announcements[0];
+
+  // Send notifications to all group members except the sender
+  group.members.forEach(async (memberId) => {
+    if (memberId.toString() !== req.user._id.toString()) {
+      await sendNotification({
+        recipient: memberId,
+        sender: req.user._id,
+        type: 'ANNOUNCEMENT',
+        title: `New Announcement in ${group.name}`,
+        message: text,
+        link: `/groups`,
+      });
+    }
+  });
+
+  res.status(201).json(savedAnnouncement);
+});
+
+// @desc    Get group announcements
+// @route   GET /api/groups/:id/announcements
+export const getAnnouncements = asyncHandler(async (req, res) => {
+  const group = await GroupModel.findById(req.params.id)
+    .populate('announcements.user', 'name avatar');
+
+  if (!group) {
+    res.status(404);
+    throw new Error('Group not found');
+  }
+
+  if (!group.members.some(memberId => memberId.equals(req.user._id))) {
+    res.status(401);
+    throw new Error('Not a member of this group');
+  }
+
+  res.json(group.announcements);
 });

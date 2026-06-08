@@ -45,7 +45,16 @@ const userSchema = new mongoose.Schema({
   isVerified: {
     type: Boolean,
     default: false,
-  }
+  },
+  pushSubscriptions: [
+    {
+      endpoint: String,
+      keys: {
+        p256dh: String,
+        auth: String,
+      },
+    },
+  ],
 }, { timestamps: true });
 
 // Hash password before saving
