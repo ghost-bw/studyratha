@@ -19,17 +19,84 @@ const Navbar = () => {
   const { notifications, unreadCount, markAsRead, markAllRead } = useNotification();
   const [isOpen, setIsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const notificationRef = useRef(null);
+  
+  const desktopNotificationRef = useRef(null);
+  const mobileNotificationRef = useRef(null);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target)) {
+      const isOutsideDesktop = !desktopNotificationRef.current?.contains(event.target);
+      const isOutsideMobile = !mobileNotificationRef.current?.contains(event.target);
+      
+      if (isOutsideDesktop && isOutsideMobile) {
         setShowNotifications(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    document.addEventListener('touchstart', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
   }, []);
+
+  const NotificationDropdown = ({ isMobile = false }) => {
+    console.log('Rendering NotificationDropdown, isMobile:', isMobile);
+    return (
+      <div 
+        onClick={(e) => e.stopPropagation()}
+        className={`${isMobile ? 'fixed top-16 left-4 right-4 w-auto' : 'absolute right-0 mt-2 w-80'} bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]`}
+      >
+        <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
+          <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
+          <button 
+            onClick={(e) => { e.stopPropagation(); markAllRead(); }}
+            className="text-xs font-bold text-primary-600 hover:text-primary-700"
+          >
+            Mark all as read
+          </button>
+        </div>
+        <div className="max-h-96 overflow-y-auto">
+          {notifications.length === 0 ? (
+            <div className="p-8 text-center text-slate-400">
+              <p className="text-sm font-medium">No notifications yet.</p>
+            </div>
+          ) : (
+            notifications.map((n) => (
+              <div 
+                key={n._id}
+                className={`p-4 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer relative ${!n.isRead ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''}`}
+                onClick={() => {
+                  if (!n.isRead) markAsRead(n._id);
+                  setShowNotifications(false);
+                }}
+              >
+                {!n.isRead && (
+                  <div className="absolute top-4 right-4 w-2 h-2 bg-primary-600 rounded-full"></div>
+                )}
+                <div className="flex items-start space-x-3">
+                  <div className={`p-2 rounded-lg ${
+                    n.type === 'ANNOUNCEMENT' ? 'bg-blue-100 text-blue-600' :
+                    n.type === 'TASK_DEADLINE' ? 'bg-red-100 text-red-600' :
+                    'bg-amber-100 text-amber-600'
+                  }`}>
+                    <HiOutlineBell size={16} />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{n.title}</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{n.message}</p>
+                    <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                      {new Date(n.createdAt).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <nav className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50">
@@ -59,8 +126,8 @@ const Navbar = () => {
           </div>
 
           <div className="hidden md:flex items-center space-x-4">
-            {/* Notifications Bell */}
-            <div className="relative" ref={notificationRef}>
+            {/* Desktop Notifications Bell */}
+            <div className="relative" ref={desktopNotificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="p-2 text-slate-500 hover:text-primary-600 transition-all relative"
@@ -72,58 +139,7 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
-                  <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <button 
-                      onClick={markAllRead}
-                      className="text-xs font-bold text-primary-600 hover:text-primary-700"
-                    >
-                      Mark all as read
-                    </button>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400">
-                        <p className="text-sm font-medium">No notifications yet.</p>
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div 
-                          key={n._id}
-                          className={`p-4 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer relative ${!n.isRead ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''}`}
-                          onClick={() => {
-                            if (!n.isRead) markAsRead(n._id);
-                            // Optionally navigate to n.link
-                          }}
-                        >
-                          {!n.isRead && (
-                            <div className="absolute top-4 right-4 w-2 h-2 bg-primary-600 rounded-full"></div>
-                          )}
-                          <div className="flex items-start space-x-3">
-                            <div className={`p-2 rounded-lg ${
-                              n.type === 'ANNOUNCEMENT' ? 'bg-blue-100 text-blue-600' :
-                              n.type === 'TASK_DEADLINE' ? 'bg-red-100 text-red-600' :
-                              'bg-amber-100 text-amber-600'
-                            }`}>
-                              <HiOutlineBell size={16} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{n.title}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{n.message}</p>
-                              <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                                {new Date(n.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+              {showNotifications && <NotificationDropdown />}
             </div>
 
             <div className="flex items-center space-x-2 border-l border-slate-200 dark:border-slate-700 pl-4">
@@ -145,9 +161,9 @@ const Navbar = () => {
             </div>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu button and Bell */}
           <div className="md:hidden flex items-center space-x-2">
-            <div className="relative" ref={notificationRef}>
+            <div className="relative" ref={mobileNotificationRef}>
               <button 
                 onClick={() => setShowNotifications(!showNotifications)}
                 className="p-2 text-slate-500 hover:text-primary-600 transition-all relative"
@@ -159,57 +175,7 @@ const Navbar = () => {
                   </span>
                 )}
               </button>
-
-              {showNotifications && (
-                <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-800 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200 z-[100]">
-                  <div className="p-4 border-b border-slate-50 dark:border-slate-800 flex justify-between items-center">
-                    <h3 className="font-bold text-slate-900 dark:text-white">Notifications</h3>
-                    <button 
-                      onClick={(e) => { e.stopPropagation(); markAllRead(); }}
-                      className="text-xs font-bold text-primary-600 hover:text-primary-700"
-                    >
-                      Mark all as read
-                    </button>
-                  </div>
-                  <div className="max-h-96 overflow-y-auto">
-                    {notifications.length === 0 ? (
-                      <div className="p-8 text-center text-slate-400">
-                        <p className="text-sm font-medium">No notifications yet.</p>
-                      </div>
-                    ) : (
-                      notifications.map((n) => (
-                        <div 
-                          key={n._id}
-                          className={`p-4 border-b border-slate-50 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors cursor-pointer relative ${!n.isRead ? 'bg-primary-50/30 dark:bg-primary-900/10' : ''}`}
-                          onClick={() => {
-                            if (!n.isRead) markAsRead(n._id);
-                          }}
-                        >
-                          {!n.isRead && (
-                            <div className="absolute top-4 right-4 w-2 h-2 bg-primary-600 rounded-full"></div>
-                          )}
-                          <div className="flex items-start space-x-3">
-                            <div className={`p-2 rounded-lg ${
-                              n.type === 'ANNOUNCEMENT' ? 'bg-blue-100 text-blue-600' :
-                              n.type === 'TASK_DEADLINE' ? 'bg-red-100 text-red-600' :
-                              'bg-amber-100 text-amber-600'
-                            }`}>
-                              <HiOutlineBell size={16} />
-                            </div>
-                            <div>
-                              <p className="text-sm font-bold text-slate-900 dark:text-white leading-tight">{n.title}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{n.message}</p>
-                              <p className="text-[10px] text-slate-400 mt-2 font-medium">
-                                {new Date(n.createdAt).toLocaleString()}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
-              )}
+              {showNotifications && <NotificationDropdown isMobile />}
             </div>
             <button onClick={() => setIsOpen(!isOpen)} className="text-slate-600 dark:text-slate-300 p-2">
               {isOpen ? <HiXMark size={28} /> : <HiOutlineBars3 size={28} />}
