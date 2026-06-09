@@ -15,7 +15,8 @@ import {
   HiOutlineExclamationCircle,
   HiOutlineCalendar,
   HiOutlineUsers,
-  HiOutlineArrowPath
+  HiOutlineArrowPath,
+  HiOutlineCamera
 } from 'react-icons/hi2';
 
 const Tasks = () => {
@@ -137,6 +138,17 @@ const Tasks = () => {
     
     const newUrls = selectedFiles.map(file => URL.createObjectURL(file));
     setPreviewUrls(prev => [...prev, ...newUrls]);
+  };
+
+  const handleCameraCapture = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.capture = 'environment';
+    input.onchange = (e) => {
+      handleFileChange(e);
+    };
+    input.click();
   };
 
   const removeFile = (index) => {
@@ -464,21 +476,35 @@ const Tasks = () => {
             <p className="text-slate-500 dark:text-slate-400 mb-6 font-medium">Please provide a screenshot to mark this task as <span className="text-primary-600 font-bold">{statusToUpdate}</span>.</p>
             
             <form onSubmit={handleSubmitEvidence} className="space-y-5">
-              <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-8 text-center bg-slate-50 dark:bg-slate-950 hover:border-primary-500 transition-colors relative group">
-                <input 
-                  type="file" 
-                  multiple 
-                  accept="image/*" 
-                  onChange={handleFileChange}
-                  className="absolute inset-0 opacity-0 cursor-pointer z-10"
-                />
-                <div className="space-y-2">
-                  <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 transition-transform">
-                    <HiPlus className="text-primary-600" size={24} />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center bg-slate-50 dark:bg-slate-950 hover:border-primary-500 transition-colors relative group">
+                  <input 
+                    type="file" 
+                    multiple 
+                    accept="image/*" 
+                    onChange={handleFileChange}
+                    className="absolute inset-0 opacity-0 cursor-pointer z-10"
+                  />
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 transition-transform">
+                      <HiPlus className="text-primary-600" size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Upload Files</p>
                   </div>
-                  <p className="text-sm font-bold text-slate-600 dark:text-slate-300">Click to upload screenshots</p>
-                  <p className="text-xs text-slate-400">JPG, PNG up to 5MB each</p>
                 </div>
+
+                <button 
+                  type="button"
+                  onClick={handleCameraCapture}
+                  className="border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center bg-slate-50 dark:bg-slate-950 hover:border-primary-500 transition-colors group"
+                >
+                  <div className="space-y-2">
+                    <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center mx-auto shadow-sm group-hover:scale-110 transition-transform">
+                      <HiOutlineCamera className="text-primary-600" size={20} />
+                    </div>
+                    <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Take Photo</p>
+                  </div>
+                </button>
               </div>
 
               {previewUrls.length > 0 && (

@@ -38,5 +38,10 @@ const taskSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
+taskSchema.index({ assignedTo: 1 });
+taskSchema.index({ createdBy: 1 });
+taskSchema.index({ groupId: 1 });
+taskSchema.index({ deadline: 1 });
+
 const Task = mongoose.model('Task', taskSchema);
 export default Task;
