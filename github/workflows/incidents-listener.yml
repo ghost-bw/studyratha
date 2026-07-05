@@ -2,7 +2,7 @@ name: Incident Listener
 
 on:
   workflow_run:
-    workflows: ["ResumePro CI"]
+    workflows: ["ResumePro CI","Incident Demo"]
     types: [completed]
 
 jobs:
