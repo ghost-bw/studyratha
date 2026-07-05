@@ -1,0 +1,29 @@
+name: Incident Listener
+
+on:
+  workflow_run:
+    workflows: ["ResumePro CI"]
+    types: [completed]
+
+jobs:
+  notify-on-failure:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify n8n of failure
+        run: |
+          curl -X POST "${{ secrets.N8N_WEBHOOK_URL }}" \
+            -H "Content-Type: application/json" \
+            -H "x-webhook-secret: ${{ secrets.N8N_WEBHOOK_SECRET }}" \
+            -d '{
+              "repository":"${{ github.repository }}",
+              "workflow":"${{ github.event.workflow_run.name }}",
+              "run_id":"${{ github.event.workflow_run.id }}",
+              "run_number":"${{ github.event.workflow_run.run_number }}",
+              "branch":"${{ github.event.workflow_run.head_branch }}",
+              "commit":"${{ github.event.workflow_run.head_sha }}",
+              "actor":"${{ github.event.workflow_run.actor.login }}",
+              "status":"failed",
+              "event":"${{ github.event.workflow_run.event }}",
+              "run_url":"${{ github.event.workflow_run.html_url }}"
+            }'
