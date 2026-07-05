@@ -128,7 +128,7 @@ const Dashboard = () => {
           </div>
           <div>
             <h1 className="text-3xl font-black text-slate-900 dark:text-white tracking-tight">
-              Hello, {user?.name?.split(' ')[0] || 'User'}! 👋
+              Hey Hi!!, {user?.name?.split(' ')[0] || 'User'}! 👋
             </h1>
             <p className="text-slate-500 dark:text-slate-400">Welcome back to <span className="font-serif text-primary-600">Ratha</span>.</p>
           </div>
